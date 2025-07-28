@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Jitsi Device Controller</title>
+    <script src="https://meet.jit.si/external_api.js"></script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+      }
+      #jitsi-container {
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="jitsi-container"></div>
+
+    <script>
+      // Jitsi API setup
+      const domain = "meet.jit.si";
+      const options = {
+        roomName: "YourRoomNameHere", // 🔁 Replace with your actual room name
+        width: "100%",
+        height: "100%",
+        parentNode: document.getElementById("jitsi-container"),
+        userInfo: {
+          displayName: "FlutterUser"
+        },
+        configOverwrite: {
+          startWithAudioMuted: false,
+          startWithVideoMuted: false
+        },
+        interfaceConfigOverwrite: {
+          PREJOIN_PAGE_ENABLED: false // ✅ disables the prejoin page
+        }
+      };
+
+      const api = new JitsiMeetExternalAPI(domain, options);
+
+      // 📋 Get list of camera and mic devices
+      window.getDevices = async function () {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(d => d.kind === "videoinput");
+        const audioInputs = devices.filter(d => d.kind === "audioinput");
+
+        return JSON.stringify({
+          videoInputs: videoInputs.map(d => ({
+            label: d.label || "Camera",
+            deviceId: d.deviceId
+          })),
+          audioInputs: audioInputs.map(d => ({
+            label: d.label || "Microphone",
+            deviceId: d.deviceId
+          }))
+        });
+      };
+
+      // 🔄 Switch to selected camera/microphone
+      window.switchDevices = async function (videoId, audioId) {
+        try {
+          if (videoId) {
+            await api.setCameraDevice(videoId);
+          }
+          if (audioId) {
+            await api.setMicrophoneDevice(audioId);
+          }
+        } catch (err) {
+          console.error("Device switch error:", err);
+        }
+      };
+
+      // 🎙 Toggle mic
+      window.toggleMic = function () {
+        api.executeCommand('toggleAudio');
+      };
+
+      // 🎥 Toggle camera
+      window.toggleCam = function () {
+        api.executeCommand('toggleVideo');
+      };
+    </script>
+  </body>
+</html>
